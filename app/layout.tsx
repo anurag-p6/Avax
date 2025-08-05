@@ -3,7 +3,6 @@ import "./globals.css"
 import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { ThemeProvider } from "@/components/theme-provider"
-import { PhantomProvider } from "@/chat/walletprovider";
 import '@/styles/global-utils.css';
 
 export const metadata: Metadata = {
@@ -20,11 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={GeistSans.className}>
-        <PhantomProvider>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           {children}
         </ThemeProvider>
-        </PhantomProvider>
       </body>
     </html>
   )

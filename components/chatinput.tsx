@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Plus, PackagePlus, Search, Paperclip, CheckCircle, ChevronDown, ArrowUp, Globe, Folder, FolderOpen } from 'lucide-react';
 import { AISuggestions, AISuggestion } from './ai-suggestions';
 import MCPIcon from './ui/mcpicon';
-import { MCPDropdownContainer } from '../mcp/mcpcontainer';
+
 
 interface ChatInputProps {
   onSend: (message: string) => Promise<void>;
@@ -78,7 +78,7 @@ export default function ChatInput({
 
   return (
     <>
-      <div className="p-2 bg-[#14121a] rounded-b-2xl">
+      <div className="p-2 bg-[#1c1b22] rounded-b-2xl">
         <div className="max-w-3xl mx-auto">
           <div className="relative bg-[#2d2936] rounded-lg">
             <textarea
@@ -149,11 +149,6 @@ export default function ChatInput({
           </div>
         </div>
       </div>
-      
-      <MCPDropdownContainer 
-        isOpen={isMCPDropdownOpen}
-        setIsOpen={setIsMCPDropdownOpen}
-      />
     </>
   );
 }
