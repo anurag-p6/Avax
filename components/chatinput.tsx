@@ -13,6 +13,7 @@ interface ChatInputProps {
   isModelSelectorOpen: boolean;
   setShowFileDropArea: (show: boolean) => void;
   modelButtonRef: React.RefObject<HTMLDivElement>;
+  onImagePrompt?: (prompt: string) => void; // Add this prop
 }
 
 export default function ChatInput({
@@ -22,7 +23,8 @@ export default function ChatInput({
   setIsModelSelectorOpen,
   isModelSelectorOpen,
   setShowFileDropArea,
-  modelButtonRef
+  modelButtonRef,
+  onImagePrompt
 }: ChatInputProps) {
   // Add the necessary state variables
   const [input, setInput] = useState("");
@@ -44,9 +46,41 @@ export default function ChatInput({
     if (!input.trim() || isLoading) return;
     
     try {
+      // Check if it's an image generation request
+      const isImageRequest = input.toLowerCase().includes("generate image") || 
+                           input.toLowerCase().includes("create image") || 
+                           input.toLowerCase().includes("draw") || 
+                           input.toLowerCase().includes("make image") ||
+                           input.toLowerCase().startsWith("image of");
+      
+      // If it's an image request, also notify the ImageGen component
+      if (isImageRequest && onImagePrompt) {
+        let imagePrompt = input;
+        
+        // Extract the actual image description from various formats
+        if (input.toLowerCase().includes("generate image of")) {
+          imagePrompt = input.split("generate image of")[1].trim();
+        } else if (input.toLowerCase().includes("create image of")) {
+          imagePrompt = input.split("create image of")[1].trim();
+        } else if (input.toLowerCase().includes("make image of")) {
+          imagePrompt = input.split("make image of")[1].trim();
+        } else if (input.toLowerCase().includes("draw")) {
+          imagePrompt = input.split("draw")[1].trim();
+        } else if (input.toLowerCase().startsWith("image of")) {
+          imagePrompt = input.substring("image of".length).trim();
+        }
+        
+        // Clean up the prompt
+        imagePrompt = imagePrompt || input;
+        
+        console.log('Image generation request detected:', imagePrompt);
+        onImagePrompt(imagePrompt);
+      }
+      
       // Pass the message to the parent component and clear the input
       await onSend(input);
       setInput("");
+      setHasTyped(false);
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -83,7 +117,7 @@ export default function ChatInput({
           <div className="relative bg-[#2d2936] rounded-lg">
             <textarea
               ref={textareaRef}
-              placeholder="Ask anything"
+              placeholder="Ask anything or type 'generate image of [description]' to create images"
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}

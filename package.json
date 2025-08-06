@@ -14,6 +14,7 @@
     "@composio/core": "^0.1.36",
     "@coral-xyz/anchor": "0.28.0",
     "@gsap/react": "^2.1.2",
+    "@huggingface/inference": "^4.6.1",
     "@phantom/browser-sdk": "^0.0.6",
     "@phantom/react-sdk": "^0.0.6",
     "@phantom/wallet-sdk": "^0.1.2",
@@ -55,6 +56,7 @@
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
+    "@types/next": "^8.0.7",
     "@types/node": "^20",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",

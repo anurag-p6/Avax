@@ -1,43 +1,83 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Image as ImageIcon, Download, Share2 } from "lucide-react"
 
-export function ImageGen() {
-  const [isReady, setIsReady] = useState(true)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [prompt, setPrompt] = useState("")
+interface ImageGenProps {
+  state: {
+    prompt: string;
+    isGenerating: boolean;
+    imageUrl: string | null;
+  };
+  setState: (state: any) => void;
+  onGenerateImage: (prompt: string) => Promise<string | null>;
+  selectedModel: string; // Add selected model prop
+}
 
-  const handleGenerate = () => {
-    if (!prompt.trim()) return
-    setIsGenerating(true)
+export function ImageGen({ state, setState, onGenerateImage, selectedModel }: ImageGenProps) {
+  const handleDownload = () => {
+    if (!state.imageUrl) return;
     
-    // Simulate generation process
-    setTimeout(() => {
-      setIsGenerating(false)
-    }, 3000)
-  }
+    const link = document.createElement('a');
+    link.href = state.imageUrl;
+    link.download = `generated-image-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
-    <div className="h-full bg-[#1c1b22]">
-      <div className="p-4 h-full flex flex-col">
-        {/* <h2 className="text-xl font-semibold text-gray-200 mb-6 flex items-center">
-         
-          Mira AI Image Gen
-        </h2> */}
+    <div className="h-full bg-[#1a1625] border-l border-[#2d2936]">
+      <div className="p-6 h-full flex flex-col">
+        <h2 className="text-xl font-semibold text-gray-200 mb-6 flex items-center">
+          <ImageIcon className="mr-2 h-5 w-5 text-purple-400" />
+          Image Generation
+        </h2>
         
+        {/* Current Model Display */}
+        <div className="mb-4 p-3 bg-[#2d2936]/50 rounded-lg border border-[#3a3545]">
+          <div className="text-sm text-gray-400">Current Model:</div>
+          <div className="text-sm text-gray-300 font-medium">{selectedModel}</div>
+        </div>
+
         {/* Image area */}
-        <div className="flex-1 flex flex-col items-center justify-center border-2 border-solid border-[#3a3545] rounded-lg bg-[#14121a]/50 mb-4 overflow-hidden">
-          {isGenerating ? (
+        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-[#3a3545] rounded-lg bg-[#14121a]/50 mb-4 overflow-hidden">
+          {state.isGenerating ? (
             <div className="text-center p-4">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-lg relative overflow-hidden">
-                <div className="absolute inset-0 shimmer"></div>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-lg relative overflow-hidden bg-gradient-to-br from-purple-600 to-pink-600">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
               </div>
-              <h3 className="text-lg font-medium text-gray-300 mb-2">Generating...</h3>
-              <p className="text-sm text-gray-400">
-                Creating your image with AI
+              <h3 className="text-lg font-medium text-gray-300 mb-2">Generating Image...</h3>
+              <p className="text-sm text-gray-400 text-center">
+                Creating: "{state.prompt}"
               </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Using: {selectedModel}
+              </p>
+              <div className="mt-3">
+                <div className="w-48 h-1 bg-[#2d2936] rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ) : state.imageUrl ? (
+            <div className="w-full h-full flex flex-col p-2">
+              <div className="flex-1 flex items-center justify-center">
+                <img 
+                  src={state.imageUrl} 
+                  alt="Generated image" 
+                  className="max-w-full max-h-full object-contain rounded-lg border border-[#3a3545]"
+                />
+              </div>
+              <div className="mt-3 text-center">
+                <p className="text-sm text-gray-400 px-2 italic">
+                  "{state.prompt}"
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Generated with: {selectedModel}
+                </p>
+              </div>
             </div>
           ) : (
             <div className="text-center p-4">
@@ -48,49 +88,43 @@ export function ImageGen() {
                 Ready to create
               </h3>
               <p className="text-sm text-gray-400 mb-2">
-                Enter a prompt below to generate content IP
+                Use chat input to generate images
               </p>
+              <div className="text-xs text-gray-500 mt-4 p-3 bg-[#2d2936]/50 rounded">
+                <p className="mb-2"><strong>Examples:</strong></p>
+                <p>• "generate image of a sunset over mountains"</p>
+                <p className="mt-2 text-purple-400">Select model first, then type your prompt!</p>
+              </div>
             </div>
           )}
         </div>
 
-
-        {/* Action buttons */}
-        <div className="flex flex-col gap-3">
-          <motion.button
-            className="w-full bg-gradient-to-r from-[#7b5cfa] to-[#9d5cfa] hover:opacity-90 text-white px-4 py-2 rounded-lg text-sm font-medium relative overflow-hidden border border-[#9d5cfa]/50 flex items-center justify-center"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleGenerate}
-            disabled={isGenerating || !prompt.trim()}
-          >
-            <span className="relative z-10">
-              {isGenerating ? "Generating..." : "Mint IP"}
-            </span>
-          </motion.button>
-          
+        {/* Action buttons - only show when image exists */}
+        {state.imageUrl && (
           <div className="flex gap-3">
             <motion.button
-              className="flex-1 bg-[#2d2936] hover:bg-[#3a3545] text-gray-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+              className="flex-1 bg-[#2d2936] hover:bg-[#3a3545] text-gray-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              disabled={isGenerating}
+              onClick={handleDownload}
+              disabled={state.isGenerating}
             >
               <Download className="h-4 w-4" />
               <span>Save</span>
             </motion.button>
             <motion.button
-              className="flex-1 bg-[#2d2936] hover:bg-[#3a3545] text-gray-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+              className="flex-1 bg-[#2d2936] hover:bg-[#3a3545] text-gray-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              disabled={isGenerating}
+              disabled={state.isGenerating}
             >
               <Share2 className="h-4 w-4" />
               <span>Share</span>
             </motion.button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
 }
+             

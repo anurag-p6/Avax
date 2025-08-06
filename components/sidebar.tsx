@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 
 export default function Sidebar() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true) // Changed to true for default closed
   return (
     <>
         <div className="flex h-screen bg-[#1a1625]">

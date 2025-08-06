@@ -4,44 +4,96 @@ import { useState, useEffect, useContext, createContext } from 'react';
 
 // New component for rendering markdown content with enhanced code blocks
 function MarkdownContent({ text }: { text: string }) {
-  // Helper function to detect and process code blocks
-  const processCodeBlocks = (text: string) => {
-    const codeBlockRegex = /```([a-z]*)\n([\s\S]*?)```/g;
-    const segments = [];
+  // Helper function to detect and process code blocks and images
+  const processContent = (text: string) => {
+    // First, separate image markdown from the rest
+    const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
+    const segments: {
+      type: 'text' | 'code' | 'image';
+      content: string;
+      alt?: string;
+      src?: string;
+      language?: string;
+    }[] = [];
+    
+    // Process text and extract images
     let lastIndex = 0;
     let match;
-
-    while ((match = codeBlockRegex.exec(text)) !== null) {
-      // Add text before the code block
+    
+    while ((match = imageRegex.exec(text)) !== null) {
+      // Add text before the image
       if (match.index > lastIndex) {
         segments.push({
           type: 'text',
           content: text.slice(lastIndex, match.index)
         });
       }
-
-      // Add the code block
+      
+      // Add the image
       segments.push({
-        type: 'code',
-        language: match[1] || 'plaintext',
-        content: match[2]
+        type: 'image',
+        content: match[0],
+        alt: match[1],
+        src: match[2]
       });
-
+      
       lastIndex = match.index + match[0].length;
     }
-
-    // Add remaining text after the last code block
+    
+    // Add remaining text after the last image
     if (lastIndex < text.length) {
       segments.push({
         type: 'text',
         content: text.slice(lastIndex)
       });
     }
-
-    return segments.length > 0 ? segments : [{ type: 'text', content: text }];
+    
+    // Process code blocks in text segments
+    const processedSegments = [];
+    for (const segment of segments) {
+      if (segment.type === 'text') {
+        const codeBlockRegex = /```([a-z]*)\n([\s\S]*?)```/g;
+        const textSegments = [];
+        let textLastIndex = 0;
+        let codeMatch;
+        
+        while ((codeMatch = codeBlockRegex.exec(segment.content)) !== null) {
+          // Add text before the code block
+          if (codeMatch.index > textLastIndex) {
+            textSegments.push({
+              type: 'text',
+              content: segment.content.slice(textLastIndex, codeMatch.index)
+            });
+          }
+          
+          // Add the code block
+          textSegments.push({
+            type: 'code',
+            content: codeMatch[2],
+            language: codeMatch[1] || 'plaintext'
+          });
+          
+          textLastIndex = codeMatch.index + codeMatch[0].length;
+        }
+        
+        // Add remaining text after the last code block
+        if (textLastIndex < segment.content.length) {
+          textSegments.push({
+            type: 'text',
+            content: segment.content.slice(textLastIndex)
+          });
+        }
+        
+        processedSegments.push(...textSegments);
+      } else {
+        processedSegments.push(segment);
+      }
+    }
+    
+    return processedSegments.length > 0 ? processedSegments : [{ type: 'text', content: text }];
   };
 
-  const segments = processCodeBlocks(text);
+  const segments = processContent(text);
 
   return (
     <div className="text-gray-200 markdown-content">
@@ -64,6 +116,22 @@ function MarkdownContent({ text }: { text: string }) {
               <pre className="bg-[#1a1625] p-4 rounded-b-md overflow-x-auto text-sm font-mono text-purple-300">
                 {segment.content}
               </pre>
+            </div>
+          );
+        } else if (segment.type === 'image') {
+          return (
+            <div key={segmentIndex} className="my-4 flex flex-col items-center">
+              <div className="relative w-full max-w-md rounded-lg overflow-hidden border border-[#3a3545]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={segment.src} 
+                  alt={segment.alt || "Generated image"} 
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+              {segment.alt && (
+                <span className="text-xs text-gray-400 mt-2">{segment.alt}</span>
+              )}
             </div>
           );
         } else {

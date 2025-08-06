@@ -1,13 +1,12 @@
 import { ModelSelector } from "./model-selector"
 import { motion } from "framer-motion"
 import { Dispatch, SetStateAction } from "react"
-import { updateModelProvider } from "@/chat/provider"
 
 interface ModelDropdownProps {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   selectedModel: string;
-  setSelectedModel: Dispatch<SetStateAction<string>>;
+  setSelectedModel: (modelName: string) => void;  // Changed to accept function
   modelSelectorRef: React.RefObject<HTMLDivElement>;
 }
 
@@ -19,11 +18,11 @@ export const ModelDropdown = ({
   modelSelectorRef 
 }: ModelDropdownProps) => {
   const handleSelectModel = (model: string) => {
-    // Update the selected model
-    setSelectedModel(model)
+    // Call the setSelectedModel function from props (this will handle both state and provider update)
+    setSelectedModel(model);
     
     // Close the dropdown
-    setIsOpen(false)
+    setIsOpen(false);
   }
 
   return (

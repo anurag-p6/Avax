@@ -7,8 +7,8 @@ import { createOpenAI } from "@ai-sdk/openai";
 
 
 const openai = createOpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
+    baseURL: "https://router.huggingface.co/v1",
+    apiKey: process.env.HF_TOKEN, // Use HuggingFace token for OpenRouter
 });
 
 // Define model mappings for OpenRouter
@@ -28,6 +28,8 @@ const modelMappings: Record<string, string> = {
   "Moonshotai kimi": "moonshotai/kimi-k2:free",
   "Qwen3 4B": "qwen/qwen3-4b:free",
   "Deepseek v3 0324": "deepseek/deepseek-chat-v3-0324:free",
+  "Stable-diffusion-xl-base-1.0": "stabilityai/stable-diffusion-xl-base-1.0:free",
+  "black-forest-labs/FLUX.1-dev": "black-forest-labs/FLUX.1-dev:free",
 
   // // Default model if none of the above match
   // "default": "mistralai/mistral-7b-instruct:free"

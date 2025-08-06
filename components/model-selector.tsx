@@ -100,6 +100,18 @@ const models: ModelType[] = [
     modelId: "qwen/qwen3-4b:free",
     free: true
   },
+  {
+    name: "Stable-diffusion-xl-base-1.0",
+    capabilities: ["vision"],
+    modelId: "stabilityai/stable-diffusion-xl-base-1.0:free",
+    free: true
+  },
+  {
+    name: "black-forest-labs/FLUX.1-dev",
+    capabilities: ["document", "reasoning"],
+    modelId: "black-forest-labs/FLUX.1-dev:free",
+    free: true
+  }
 ]
 
 interface ModelSelectorProps {
@@ -113,30 +125,25 @@ export function ModelSelector({ onSelect, currentModel }: ModelSelectorProps) {
 
   const displayedModels = showAll ? models : models.slice(0, 5)
 
-  // Set default model on first render if none is selected or if it's not one of our models
+  // Set default model on first render if none is selected
   useEffect(() => {
-    // Find Google Gemma 3n model
+    // Find default model
     const defaultModel = models.find(model => model.name === "Google Gemma 3n") || models[0];
     
-    // Check if current model is not in our models list or if it's one of the OpenAI defaults
+    // Check if current model is not in our models list
     const isCurrentModelInList = models.some(model => model.name === currentModel);
-    const isOpenAIDefault = currentModel.includes("OpenAI") || currentModel.includes("GPT");
     
-    if (!currentModel || !isCurrentModelInList || isOpenAIDefault) {
+    if (!currentModel || !isCurrentModelInList) {
       console.log("Setting default model to:", defaultModel.name);
-      updateModelProvider(defaultModel.name);
       onSelect(defaultModel.name);
     }
-  }, []);  // Only run on mount, not on every currentModel change
+  }, []);  // Only run on mount
 
-  // Handle model selection with OpenRouter model updating
+  // Handle model selection
   const handleModelSelect = (model: ModelType) => {
     if (model.disabled) return;
     
-    // Update the provider with the new model
-    updateModelProvider(model.name);
-    
-    // Call the parent component's onSelect
+    // Call the onSelect handler (which will update both state and provider)
     onSelect(model.name);
   };
 
