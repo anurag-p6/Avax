@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
-import { Send, Plus, PackagePlus, Search, Paperclip, CheckCircle, ChevronDown, ArrowUp, Globe, Folder, FolderOpen } from 'lucide-react';
+import { Send, Plus, PackagePlus, Search, Paperclip, CheckCircle, ChevronDown, ArrowUp, Globe, Folder, FolderOpen, Voicemail, VoicemailIcon, AudioLines } from 'lucide-react';
 import { AISuggestions, AISuggestion } from './ai-suggestions';
 import MCPIcon from './ui/mcpicon';
 
@@ -113,11 +113,11 @@ export default function ChatInput({
   return (
     <>
       <div className="p-2 bg-[#1c1b22] rounded-b-2xl">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="relative bg-[#2d2936] rounded-lg">
             <textarea
               ref={textareaRef}
-              placeholder="Ask anything or type 'generate image of [description]' to create images"
+              placeholder="Ask anything or type 'draw image of [description]' to create images"
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -126,14 +126,14 @@ export default function ChatInput({
               style={{ minHeight: "48px" }}
             />
             <div className="flex items-center gap-1 px-2 py-1 border-t border-[#3a3545]">
-              <button 
+              {/* <button 
                 className="p-1.5 text-gray-300 hover:bg-[#3a3545] rounded-full"
                 onClick={() => setIsMCPDropdownOpen(!isMCPDropdownOpen)}
               >
                 <MCPIcon />
-              </button>
+              </button> */}
               <button className="p-1.5 text-gray-300 hover:bg-[#3a3545] rounded-full flex items-center gap-1">
-                <Globe className="h-5 w-5" />
+                <AudioLines className="h-5 w-5" />
                 <span className="text-sm">Search</span>
               </button>
               {/* <button className="p-1.5 text-gray-300 hover:bg-[#3a3545] rounded-full border border-[#3a3545]/50 flex items-center gap-1">

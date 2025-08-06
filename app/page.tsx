@@ -65,14 +65,7 @@ export default function Home() {
             </button>
           )}
 
-          <div className="flex justify-end items-center p-4">
-            <button className="ml-4 text-muted-foreground hover:text-foreground">
-              <Settings size={20} />
-            </button>
-            <button className="ml-4 text-muted-foreground hover:text-foreground">
-              <Sun size={20} />
-            </button>
-          </div>
+          
 
           <ChatUI />
 

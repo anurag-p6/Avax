@@ -111,6 +111,12 @@ const models: ModelType[] = [
     capabilities: ["document", "reasoning"],
     modelId: "black-forest-labs/FLUX.1-dev:free",
     free: true
+  },
+  {
+    name: "Qwen/Qwen-Image",
+    capabilities: ["vision"],
+    modelId: "qwen/qwen-image:free",
+    free: true
   }
 ]
 

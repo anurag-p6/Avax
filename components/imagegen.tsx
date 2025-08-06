@@ -28,12 +28,12 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
   };
 
   return (
-    <div className="h-full bg-[#1a1625] border-l border-[#2d2936]">
-      <div className="p-6 h-full flex flex-col">
-        <h2 className="text-xl font-semibold text-gray-200 mb-6 flex items-center">
+    <div className="h-full bg-[#1c1b22]">
+      <div className="p-2 h-full flex flex-col">
+        {/* <h2 className="text-xl font-semibold text-gray-200 mb-6 flex items-center">
           <ImageIcon className="mr-2 h-5 w-5 text-purple-400" />
           Image Generation
-        </h2>
+        </h2> */}
         
         {/* Current Model Display */}
         <div className="mb-4 p-3 bg-[#2d2936]/50 rounded-lg border border-[#3a3545]">
@@ -42,9 +42,9 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
         </div>
 
         {/* Image area */}
-        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-[#3a3545] rounded-lg bg-[#14121a]/50 mb-4 overflow-hidden">
+        <div className="flex-1 flex flex-col w-full items-center justify-center border-2 border-solid border-[#3a3545] rounded-lg bg-[#14121a]/50 mb-4 overflow-hidden">
           {state.isGenerating ? (
-            <div className="text-center p-4">
+            <div className="text-center p-6">
               <div className="w-16 h-16 mx-auto mb-4 rounded-lg relative overflow-hidden bg-gradient-to-br from-purple-600 to-pink-600">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
               </div>

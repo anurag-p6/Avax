@@ -2,12 +2,22 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { SidebarProvider, useSidebar } from './sidebarprovider';
 import WalletButton from './walletbutton';
-import { PanelLeft, Plus, Search } from 'lucide-react';
+import { PanelLeft, Plus, Search, FolderOpen, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
-
+import { useRouter } from 'next/navigation';
 
 export default function Sidebar() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true) // Changed to true for default closed
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const router = useRouter();
+
+  const handleCollectionClick = () => {
+    router.push('/collection');
+  };
+
+  const handleChatClick = () => {
+    router.push('/');
+  };
+
   return (
     <>
         <div className="flex h-screen bg-[#1a1625]">
@@ -17,7 +27,7 @@ export default function Sidebar() {
               className="absolute top-6 left-6 z-50 text-gray-300 bg-[#2d2936] p-2 rounded-md hover:bg-[#3a3545] transition-colors flex items-center gap-2"
               onClick={() => setSidebarCollapsed(false)}
             >
-              <Image src="/images/agentzk-logo.png" alt="Agentzk Logo" width={28} height={28} className="object-contain" />
+              <Image src="/images/bloborb.png" alt="Agentzk Logo" width={28} height={28} className="object-contain rounded-full" />
               <PanelLeft size={18} />
             </button>
           )}
@@ -34,8 +44,8 @@ export default function Sidebar() {
           >
             <div className="p-6 flex items-center">
               <div className="flex items-center">
-                <Image src="/images/agentzk-logo.png" alt="" width={40} height={40} className="mr-3 object-contain" />
-                <div className="text-purple-300 font-semibold text-lg">Agentzk</div>
+                <Image src="/images/bloborb.png" alt="" width={40} height={40} className="mr-3 object-contain rounded-full" />
+                <div className="text-purple-100 font-semibold text-lg">Mira</div>
               </div>
               <button
                 className="ml-4 text-gray-300 bg-transparent p-1 rounded-md hover:bg-[#2d2936] transition-colors"
@@ -70,6 +80,32 @@ export default function Sidebar() {
                 />
               </div>
             </div>
+             {/* Navigation Tabs */}
+            <div className="px-4 py-3 text-sm text-purple-300 font-medium border-t border-[#2d2936] mt-4">Navigation</div>
+            
+            <div className="px-4 py-1">
+              <motion.div
+                className="px-3 py-2 hover:bg-[#2d2936] rounded-md text-sm text-gray-300 cursor-pointer flex items-center"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleChatClick}
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                <span>Chat</span>
+              </motion.div>
+            </div>
+
+            <div className="px-4 py-1">
+              <motion.div
+                className="px-3 py-2 hover:bg-[#2d2936] rounded-md text-sm text-gray-300 cursor-pointer flex items-center"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleCollectionClick}
+              >
+                <FolderOpen className="mr-2 h-4 w-4" />
+                <span>Collection</span>
+              </motion.div>
+            </div>
 
             <div className="px-4 py-3 text-sm text-purple-300 font-medium">Tasks</div>
 
@@ -79,6 +115,10 @@ export default function Sidebar() {
               </div>
             </div>
 
+            {/* Spacer to push wallet button to bottom */}
+            <div className="flex-1"></div>
+            
+            {/* Wallet button stays at bottom */}
             <WalletButton/>
           </motion.div>
         </div>

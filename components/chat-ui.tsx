@@ -180,7 +180,7 @@ export function ChatUI() {
   };
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full bg-[#1a1625]">
       {/* Chat Panel */}
       <div className="flex-1 min-w-0">
         <div className="flex flex-col h-full">

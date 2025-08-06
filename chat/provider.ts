@@ -30,6 +30,7 @@ const modelMappings: Record<string, string> = {
   "Deepseek v3 0324": "deepseek/deepseek-chat-v3-0324:free",
   "Stable-diffusion-xl-base-1.0": "stabilityai/stable-diffusion-xl-base-1.0:free",
   "black-forest-labs/FLUX.1-dev": "black-forest-labs/FLUX.1-dev:free",
+  "Qwen/Qwen-Image": "qwen/qwen-image:free",
 
   // // Default model if none of the above match
   // "default": "mistralai/mistral-7b-instruct:free"
