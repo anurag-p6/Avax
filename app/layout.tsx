@@ -4,9 +4,10 @@ import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { ThemeProvider } from "@/components/theme-provider"
 import '@/styles/global-utils.css';
+import Providers from "./api/generate-image/provider"
 
 export const metadata: Metadata = {
-  title: "Agentzk",
+  title: "Mira",
   description: "The best AI Chat ever made",
   icons: "/images/tabicon.ico",
 }
@@ -20,7 +21,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={GeistSans.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-          {children}
+          <Providers>
+            {children}
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Image as ImageIcon, Download, Share2 } from "lucide-react"
+import { MintButton } from "./mintbtn"
 
 interface ImageGenProps {
   state: {
@@ -16,6 +17,8 @@ interface ImageGenProps {
 }
 
 export function ImageGen({ state, setState, onGenerateImage, selectedModel }: ImageGenProps) {
+  const [minting, setMinting] = useState(false);
+  
   const handleDownload = () => {
     if (!state.imageUrl) return;
     
@@ -27,14 +30,56 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
     document.body.removeChild(link);
   };
 
+  const handleMint = () => {
+    if (!state.imageUrl) return;
+    setMinting(true);
+    
+    // This will now be handled by the MintButton component directly
+    setTimeout(() => {
+      setMinting(false);
+    }, 2000);
+  };
+
+  // Create image metadata for minting
+  const getImageMeta = () => {
+    if (!state.imageUrl) return null;
+    
+    return {
+      name: `AI Generated: ${state.prompt?.substring(0, 30)}...`,
+      description: state.prompt,
+      properties: {
+        model: selectedModel,
+        generatedAt: new Date().toISOString(),
+      }
+    };
+  };
+
+  // Convert base64 to file object if needed
+  const getImageFile = () => {
+    if (!state.imageUrl) return null;
+    
+    // If the image is already a data URL, convert to file
+    if (state.imageUrl.startsWith('data:')) {
+      const arr = state.imageUrl.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      
+      return new File([u8arr], `generated-image-${Date.now()}.png`, { type: mime });
+    }
+    
+    // For URL-based images, would need to fetch the image first
+    return null;
+  };
+
   return (
     <div className="h-full bg-[#1c1b22]">
       <div className="p-2 h-full flex flex-col">
-        {/* <h2 className="text-xl font-semibold text-gray-200 mb-6 flex items-center">
-          <ImageIcon className="mr-2 h-5 w-5 text-purple-400" />
-          Image Generation
-        </h2> */}
-        
         {/* Current Model Display */}
         <div className="mb-4 p-3 bg-[#2d2936]/50 rounded-lg border border-[#3a3545]">
           <div className="text-sm text-gray-400">Current Model:</div>
@@ -99,6 +144,20 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
           )}
         </div>
 
+        {/* Mint button - show when image exists */}
+        {state.imageUrl && (
+          <div className="mb-3">
+            <MintButton 
+              onClick={handleMint} 
+              disabled={state.isGenerating} 
+              loading={minting}
+              file={getImageFile()}
+              imageId={state.imageUrl ? `gen-img-${Date.now()}` : undefined}
+              meta={getImageMeta()}
+            />
+          </div>
+        )}
+
         {/* Action buttons - only show when image exists */}
         {state.imageUrl && (
           <div className="flex gap-3">
@@ -127,4 +186,4 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
     </div>
   )
 }
-             
+
