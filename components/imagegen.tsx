@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { Image as ImageIcon, Download, Share2 } from "lucide-react"
 import { MintButton } from "./mintbtn"
@@ -13,12 +13,17 @@ interface ImageGenProps {
   };
   setState: (state: any) => void;
   onGenerateImage: (prompt: string) => Promise<string | null>;
-  selectedModel: string; // Add selected model prop
+  selectedModel: string;
 }
 
 export function ImageGen({ state, setState, onGenerateImage, selectedModel }: ImageGenProps) {
   const [minting, setMinting] = useState(false);
+  const [mintSuccess, setMintSuccess] = useState(false);
   
+  // Create a unique ID for the generated image
+  const imageId = state.imageUrl ? `gen-img-${Date.now()}` : undefined;
+  
+  // Handle download action
   const handleDownload = () => {
     if (!state.imageUrl) return;
     
@@ -30,35 +35,19 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
     document.body.removeChild(link);
   };
 
-  const handleMint = () => {
-    if (!state.imageUrl) return;
-    setMinting(true);
+  // Handle successful mint
+  const handleMintSuccess = () => {
+    setMinting(false);
+    setMintSuccess(true);
     
-    // This will now be handled by the MintButton component directly
-    setTimeout(() => {
-      setMinting(false);
-    }, 2000);
+    // Reset after showing success for a while
+    setTimeout(() => setMintSuccess(false), 5000);
   };
 
-  // Create image metadata for minting
-  const getImageMeta = () => {
-    if (!state.imageUrl) return null;
-    
-    return {
-      name: `AI Generated: ${state.prompt?.substring(0, 30)}...`,
-      description: state.prompt,
-      properties: {
-        model: selectedModel,
-        generatedAt: new Date().toISOString(),
-      }
-    };
-  };
-
-  // Convert base64 to file object if needed
+  // Convert base64 to file object for NFT minting
   const getImageFile = () => {
     if (!state.imageUrl) return null;
     
-    // If the image is already a data URL, convert to file
     if (state.imageUrl.startsWith('data:')) {
       const arr = state.imageUrl.split(',');
       const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
@@ -73,8 +62,22 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
       return new File([u8arr], `generated-image-${Date.now()}.png`, { type: mime });
     }
     
-    // For URL-based images, would need to fetch the image first
     return null;
+  };
+  
+  // Create metadata for NFT
+  const getMetadata = () => {
+    if (!state.prompt) return null;
+    
+    return {
+      name: `AI Generated: ${state.prompt.substring(0, 30)}...`,
+      description: state.prompt,
+      properties: {
+        model: selectedModel,
+        timestamp: new Date().toISOString(),
+        generated_by: "AgentZk"
+      }
+    };
   };
 
   return (
@@ -148,12 +151,12 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
         {state.imageUrl && (
           <div className="mb-3">
             <MintButton 
-              onClick={handleMint} 
+              onClick={handleMintSuccess}
               disabled={state.isGenerating} 
               loading={minting}
               file={getImageFile()}
-              imageId={state.imageUrl ? `gen-img-${Date.now()}` : undefined}
-              meta={getImageMeta()}
+              imageId={imageId}
+              meta={getMetadata()}
             />
           </div>
         )}

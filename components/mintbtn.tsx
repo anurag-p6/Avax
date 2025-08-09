@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useAuth, useAuthState, useModal as useCampModal, CampModal } from "@campnetwork/origin/react";
 import { useModal, ParaModal, OAuthMethod } from "@getpara/react-sdk";
+import { assignImage } from "../utils/assignImage";
 
 interface MintButtonProps {
   onClick?: () => void;
@@ -24,17 +25,22 @@ export function MintButton({
   imageId,
   meta
 }: MintButtonProps) {
-  const { origin, jwt } = useAuth();
   const [internalLoading, setInternalLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  
+  // Access Camp authentication
   const { authenticated } = useAuthState();
   const { openModal: openCampModal } = useCampModal();
-  const { openModal: openParaModal } = useModal();
+  const { origin, jwt } = useAuth();
   
-  // Use either external loading state or internal loading state
+  // Loading state
   const loading = externalLoading || internalLoading;
 
   const handleMint = async () => {
     if (disabled || loading) return;
+    setError(null);
+    setSuccess(false);
     
     try {
       // If not authenticated, open authentication modal
@@ -46,21 +52,51 @@ export function MintButton({
       setInternalLoading(true);
       
       if (file && imageId && meta && origin && jwt) {
-        const licence = {
-          price: 0n,
-          duration: 0n,
-          royaltyBps: 0,
-          paymentToken: "0x0000000000000000000000000000000000000000",
-        } as const;
+        try {
+          // Use direct BigInt literals to avoid serialization issues
+          const licence = {
+            price: BigInt(0),
+            duration: BigInt(0),
+            royaltyBps: 0,
+            paymentToken: "0x0000000000000000000000000000000000000000",
+          };
 
-        const parentId = 4n; // optional: define if this is a derivative
-        await origin.mintFile(file, meta, licence, parentId);
+          // Create a safe metadata object with only primitive values
+          const safeMeta = {
+            name: String(meta.name || "AI Generated Image"),
+            description: String(meta.description || ""),
+            properties: {
+              timestamp: new Date().toISOString(),
+              ...(meta.properties?.model ? { model: String(meta.properties.model) } : {})
+            }
+          };
+          
+          // Mint the NFT
+          await origin.mintFile(file, safeMeta, licence, BigInt(4));
+          
+          // Assign the image
+          await assignImage(imageId, jwt);
+          
+          // Set success state
+          setSuccess(true);
+          
+          // Call onClick callback if provided
+          if (onClick) onClick();
+        } catch (mintError: any) {
+          console.error("Minting failed:", mintError);
+          setError("Failed to mint NFT. Please try again.");
+        }
+      } else {
+        if (!origin || !jwt) {
+          setError("Authentication issue. Please reconnect your wallet.");
+          openCampModal();
+        } else if (!file) {
+          setError("No image file to mint.");
+        }
       }
-      
-      // If custom onClick handler is provided, call it
-      if (onClick) onClick();
-    } catch (error) {
-      console.error("Minting failed:", error);
+    } catch (error: any) {
+      console.error("Error in mint process:", error);
+      setError(error?.message || "An error occurred. Please try again.");
     } finally {
       setInternalLoading(false);
     }
@@ -79,14 +115,28 @@ export function MintButton({
         disabled={disabled || loading}
       >
         <span className="tracking-wide">
-          {loading ? "Processing..." : (authenticated ? "Mint NFT" : "Connect to Mint")}
+          {loading ? "Processing..." : 
+           success ? "Minted!" :
+           authenticated ? "Mint NFT" : "Connect to Mint"}
         </span>
         {loading && (
           <div className="ml-2 h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
         )}
       </motion.button>
+      
+      {error && (
+        <div className="mt-2 text-center text-sm text-red-400 bg-red-900/20 p-2 rounded-md">
+          {error}
+        </div>
+      )}
+      
+      {success && (
+        <div className="mt-2 text-center text-sm text-green-400 bg-green-900/20 p-2 rounded-md">
+          Successfully minted as NFT!
+        </div>
+      )}
 
-      {/* Modals are rendered at root level but don't display unless opened */}
+      {/* Modals */}
       <CampModal injectButton={false} />
       <ParaModal
         appName="Camp"
