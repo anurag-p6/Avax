@@ -28,16 +28,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             },
           }}
         >
-          {/* <ParaEvmProvider
+          <ParaEvmProvider
             config={{
               projectId: "2902571ec972fe433a9f311b7be52790",
               appName: "Camp",
               chains: [testnet],
               wallets: [metaMaskWallet, walletConnectWallet, coinbaseWallet, okxWallet],
             }}
-          > */}
+          >
             {children}
-          
+          </ParaEvmProvider> 
         </ParaProvider>
       </CampProvider>
     </QueryClientProvider>

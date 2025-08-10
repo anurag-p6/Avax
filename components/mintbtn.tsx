@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useAuth, useAuthState, useModal as useCampModal, CampModal } from "@campnetwork/origin/react";
 import { useModal, ParaModal, OAuthMethod } from "@getpara/react-sdk";
-import { assignImage } from "../utils/assignImage";
+import type { Address } from "viem/accounts";
+import { dataURLtoFile } from "../utils/imageUtils";
 
 interface MintButtonProps {
   onClick?: () => void;
@@ -13,17 +14,27 @@ interface MintButtonProps {
   className?: string;
   file?: any;
   imageId?: string;
-  meta?: any;
+  imageUrl?: string;
+  prompt?: string;
+  model?: string;
 }
+
+type LicenseTerms = {
+  price: bigint;
+  duration: number;
+  royaltyBps: number;
+  paymentToken: Address;
+};
 
 export function MintButton({ 
   onClick, 
   disabled = false,
   loading: externalLoading = false,
   className = "",
-  file,
-  imageId,
-  meta
+  imageUrl,
+  prompt = "AI Generated Image",
+  model = "AI Model",
+  imageId
 }: MintButtonProps) {
   const [internalLoading, setInternalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +43,7 @@ export function MintButton({
   // Access Camp authentication
   const { authenticated } = useAuthState();
   const { openModal: openCampModal } = useCampModal();
-  const { origin, jwt } = useAuth();
+  const { origin, walletAddress, jwt } = useAuth();
   
   // Loading state
   const loading = externalLoading || internalLoading;
@@ -49,54 +60,91 @@ export function MintButton({
         return;
       }
 
+      // Check wallet connection
+      if (!walletAddress) {
+        setError("Wallet not connected. Please connect your wallet first.");
+        return;
+      }
+
       setInternalLoading(true);
       
-      if (file && imageId && meta && origin && jwt) {
-        try {
-          // Use direct BigInt literals to avoid serialization issues
-          const licence = {
-            price: BigInt(0),
-            duration: BigInt(0),
-            royaltyBps: 0,
-            paymentToken: "0x0000000000000000000000000000000000000000",
-          };
-
-          // Create a safe metadata object with only primitive values
-          const safeMeta = {
-            name: String(meta.name || "AI Generated Image"),
-            description: String(meta.description || ""),
-            properties: {
-              timestamp: new Date().toISOString(),
-              ...(meta.properties?.model ? { model: String(meta.properties.model) } : {})
-            }
-          };
-          
-          // Mint the NFT
-          await origin.mintFile(file, safeMeta, licence, BigInt(4));
-          
-          // Assign the image
-          await assignImage(imageId, jwt);
-          
-          // Set success state
-          setSuccess(true);
-          
-          // Call onClick callback if provided
-          if (onClick) onClick();
-        } catch (mintError: any) {
-          console.error("Minting failed:", mintError);
-          setError("Failed to mint NFT. Please try again.");
-        }
-      } else {
-        if (!origin || !jwt) {
-          setError("Authentication issue. Please reconnect your wallet.");
-          openCampModal();
-        } else if (!file) {
-          setError("No image file to mint.");
-        }
+      // Convert image URL to file object
+      if (!imageUrl) {
+        setError("No image available to mint");
+        return;
       }
-    } catch (error: any) {
-      console.error("Error in mint process:", error);
-      setError(error?.message || "An error occurred. Please try again.");
+      
+      // Create file from image URL
+      const file = dataURLtoFile(
+        imageUrl, 
+        `ai-generated-${Date.now()}.png`
+      );
+      
+      if (!file) {
+        setError("Could not process image for minting");
+        return;
+      }
+      
+      // Check file size
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > 10) {
+        setError(`File too large (${fileSizeMB.toFixed(2)}MB). Maximum allowed is 10MB.`);
+        return;
+      }
+      
+      // Create NFT metadata
+      const metadata = {
+        name: prompt ? `AI Generated: ${prompt.substring(0, 30)}...` : "AI Generated Image",
+        description: prompt || "Generated with AI",
+        attributes: [
+          {
+            trait_type: "Generated with",
+            value: model
+          },
+          {
+            trait_type: "Prompt",
+            value: prompt
+          },
+          {
+            trait_type: "Date",
+            value: new Date().toISOString().split('T')[0]
+          }
+        ]
+      };
+      
+      // Create license terms
+      const license = {
+        price: BigInt(0),
+        duration: 2629800, // 30 days in seconds
+        royaltyBps: 0,
+        paymentToken: "0x0000000000000000000000000000000000000000" as Address,
+      } as LicenseTerms;
+
+      console.log("Starting NFT minting...", {
+        fileSize: fileSizeMB.toFixed(2) + "MB",
+        walletAddress,
+        model,
+      });
+      
+      // Mint NFT
+      const result = await origin.mintFile(file, metadata, license);
+      
+      // Set success state
+      setSuccess(true);
+      
+      // Call onClick callback if provided
+      if (onClick) onClick();
+    } catch (mintError: any) {
+      console.error("Minting failed:", mintError);
+      
+      // Determine the specific error message
+      if (mintError?.message?.includes("BigInt") || mintError?.message?.includes("serialize")) {
+        setError("Technical error with NFT data. Please try with a different wallet.");
+      } else if (mintError?.message?.includes("signature") || mintError?.message?.includes("rejected")) {
+        setError("Transaction rejected. Please approve the transaction in your wallet.");
+      } else {
+        setError("Failed to mint NFT. Please try again.");
+      }
     } finally {
       setInternalLoading(false);
     }
@@ -115,13 +163,15 @@ export function MintButton({
         disabled={disabled || loading}
       >
         <span className="tracking-wide">
-          {loading ? "Processing..." : 
-           success ? "Minted!" :
-           authenticated ? "Mint NFT" : "Connect to Mint"}
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin mr-2"></div>
+              Minting...
+            </div>
+          ) : (
+            success ? "Minted!" : (authenticated ? "Mint NFT" : "Connect to Mint")
+          )}
         </span>
-        {loading && (
-          <div className="ml-2 h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
-        )}
       </motion.button>
       
       {error && (

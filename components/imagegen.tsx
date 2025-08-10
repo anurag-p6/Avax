@@ -19,6 +19,7 @@ interface ImageGenProps {
 export function ImageGen({ state, setState, onGenerateImage, selectedModel }: ImageGenProps) {
   const [minting, setMinting] = useState(false);
   const [mintSuccess, setMintSuccess] = useState(false);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
   
   // Create a unique ID for the generated image
   const imageId = state.imageUrl ? `gen-img-${Date.now()}` : undefined;
@@ -42,6 +43,27 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
     
     // Reset after showing success for a while
     setTimeout(() => setMintSuccess(false), 5000);
+  };
+
+  // Handle share action
+  const handleShare = async () => {
+    if (!state.imageUrl) return;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `AI Generated Image: ${state.prompt || ""}`,
+          text: `Check out this AI generated image: "${state.prompt || ""}". Generated with ${selectedModel}.`,
+          url: window.location.href
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareMessage("Link copied to clipboard");
+        setTimeout(() => setShareMessage(null), 2000);
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
   };
 
   // Convert base64 to file object for NFT minting
@@ -154,9 +176,10 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
               onClick={handleMintSuccess}
               disabled={state.isGenerating} 
               loading={minting}
-              file={getImageFile()}
+              imageUrl={state.imageUrl}
+              prompt={state.prompt}
+              model={selectedModel}
               imageId={imageId}
-              meta={getMetadata()}
             />
           </div>
         )}
@@ -178,11 +201,18 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
               className="flex-1 bg-[#2d2936] hover:bg-[#3a3545] text-gray-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={handleShare}
               disabled={state.isGenerating}
             >
               <Share2 className="h-4 w-4" />
-              <span>Share</span>
+              <span>Share Zora</span>
             </motion.button>
+          </div>
+        )}
+        
+        {shareMessage && (
+          <div className="mt-2 text-center text-sm text-green-400">
+            {shareMessage}
           </div>
         )}
       </div>

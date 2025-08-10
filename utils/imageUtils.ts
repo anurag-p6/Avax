@@ -1,26 +1,117 @@
 /**
- * Utility functions for handling images in the application
+ * Utilities for handling images and metadata when minting NFTs
  */
 
 /**
- * Converts a data URL to a File object
- * @param dataUrl - The data URL string
- * @param filename - The desired filename
- * @returns File object or null if conversion fails
+ * Creates a completely new File object to avoid any potential hidden properties
+ * @param originalFile Original file to clean
  */
-export function dataUrlToFile(dataUrl: string, filename: string): File | null {
+export function createCleanFileObject(originalFile: File): File {
   try {
-    const arr = dataUrl.split(',');
-    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
+    // Create a completely new File object without any potential hidden properties
+    return new File(
+      [originalFile], 
+      originalFile.name, 
+      { 
+        type: originalFile.type,
+        lastModified: originalFile.lastModified 
+      }
+    );
+  } catch (error) {
+    console.error("Error creating clean file:", error);
+    return originalFile; // Fall back to original if cleanup fails
+  }
+}
+
+/**
+ * Creates a completely clean metadata object with no references to the original
+ * @param metadata Original metadata to clean
+ */
+export function createCleanMetadata(metadata: any): any {
+  // Start with essential properties only
+  const cleanMeta = {
+    name: String(metadata?.name || "AI Generated Image"),
+    description: String(metadata?.description || ""),
+    properties: {}
+  };
+  
+  // Only add simple, primitive properties
+  if (metadata?.properties) {
+    // Safe property keys to include
+    const safeKeys = ["model", "timestamp", "generatedAt", "generated_by"];
     
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
+    safeKeys.forEach(key => {
+      if (metadata.properties[key] !== undefined) {
+        // Ensure all values are strings or simple primitives
+        cleanMeta.properties[key] = String(metadata.properties[key]);
+      }
+    });
+  }
+  
+  // Add a timestamp if not present
+  if (!cleanMeta.properties["timestamp"]) {
+    cleanMeta.properties["timestamp"] = new Date().toISOString();
+  }
+  
+  return cleanMeta;
+}
+
+/**
+ * Prepare file and metadata for minting, ensuring all BigInt and non-serializable values are handled
+ */
+export function prepareImageForMinting(file: File, metadata: any) {
+  // Create clean file object
+  const preparedFile = createCleanFileObject(file);
+  
+  // Create clean metadata with only primitive values
+  const simplifiedMeta = createCleanMetadata(metadata);
+  
+  // Double-check the metadata is serializable by running it through JSON cycle
+  try {
+    const metaString = JSON.stringify(simplifiedMeta);
+    const preparedMeta = JSON.parse(metaString);
+    return { preparedFile, preparedMeta };
+  } catch (error) {
+    console.error("Error serializing metadata:", error);
+    // Ultimate fallback - absolute minimum metadata
+    const fallbackMeta = {
+      name: "AI Generated Image",
+      description: "Generated with AI",
+      properties: {
+        timestamp: new Date().toISOString()
+      }
+    };
+    return { preparedFile, preparedMeta: fallbackMeta };
+  }
+}
+
+/**
+ * Convert a data URL to a File object with proper MIME type
+ */
+export function dataURLtoFile(dataUrl: string, filename: string): File | null {
+  if (!dataUrl) return null;
+  
+  try {
+    // Extract MIME type and base64 data
+    if (dataUrl.startsWith('data:')) {
+      const arr = dataUrl.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+      const bstr = atob(arr[1]);
+      
+      // Convert to byte array
+      const n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      for (let i = 0; i < n; i++) {
+        u8arr[i] = bstr.charCodeAt(i);
+      }
+      
+      // Create clean file object
+      return new File([u8arr], filename, { type: mime });
     }
     
-    return new File([u8arr], filename, { type: mime });
+    // Handle case where imageUrl is a regular URL, not a data URL
+    console.warn("Image URL is not a data URL. Cannot convert to File directly.");
+    return null;
   } catch (error) {
     console.error("Error converting data URL to file:", error);
     return null;
@@ -28,56 +119,20 @@ export function dataUrlToFile(dataUrl: string, filename: string): File | null {
 }
 
 /**
- * Fetches an image from a URL and returns it as a File object
- * @param url - The URL of the image
- * @param filename - The desired filename
- * @returns Promise that resolves to a File object or null if fetch fails
+ * Creates a new clean metadata object for NFT minting
  */
-export async function fetchImageAsFile(url: string, filename: string): Promise<File | null> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status}`);
-    }
-    
-    const blob = await response.blob();
-    return new File([blob], filename, { type: blob.type });
-  } catch (error) {
-    console.error("Error fetching image:", error);
-    return null;
-  }
-}
-
-/**
- * Creates optimized NFT metadata for an AI-generated image
- * @param prompt - The prompt used to generate the image
- * @param model - The AI model used
- * @param imageUrl - Optional URL to include in the metadata
- * @returns Metadata object formatted for NFT standards
- */
-export function createNFTMetadata(prompt: string, model: string, imageUrl?: string) {
-  const title = prompt
-    ? `${prompt.slice(0, 50)}${prompt.length > 50 ? '...' : ''}`
-    : 'AI Generated Image';
-  
+export function createNFTMetadata(prompt: string, model: string) {
   return {
-    name: title,
-    description: prompt || 'AI generated image',
-    image: imageUrl,
-    external_url: imageUrl,
+    name: prompt ? `AI Generated: ${prompt.substring(0, 30)}...` : "AI Generated Image",
+    description: prompt || "Generated with AI",
     attributes: [
       {
-        trait_type: 'AI Model',
+        trait_type: "Model",
         value: model
       },
       {
-        trait_type: 'Prompt',
-        value: prompt
-      },
-      {
-        display_type: 'date',
-        trait_type: 'Generation Date',
-        value: Date.now()
+        trait_type: "Created",
+        value: new Date().toISOString().split('T')[0]
       }
     ]
   };

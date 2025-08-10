@@ -1,5 +1,5 @@
 /**
- * Assigns an image to the user's collection after minting
+ * Assigns an image to the user's account after minting an NFT
  */
 export const assignImage = async (imageId: string, jwt: string): Promise<boolean> => {
   try {
@@ -8,10 +8,10 @@ export const assignImage = async (imageId: string, jwt: string): Promise<boolean
       return false;
     }
     
-    console.log(`Image ${imageId} assigned successfully with auth token`);
+    // This would typically call an API endpoint to associate the NFT with the user's account
+    console.log(`Image ${imageId} assigned with auth token`);
     
-    // This would typically call an API to associate the NFT with the user
-    // For now, we'll just return true to simulate successful assignment
+    // For now, just simulate success
     return true;
   } catch (error) {
     console.error("Error assigning image:", error);
