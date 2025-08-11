@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Image as ImageIcon, Download, Share2 } from "lucide-react"
 import { MintButton } from "./mintbtn"
+import { PinataSDK } from "pinata"
 
 interface ImageGenProps {
   state: {
@@ -20,20 +21,96 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
   const [minting, setMinting] = useState(false);
   const [mintSuccess, setMintSuccess] = useState(false);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   
   // Create a unique ID for the generated image
   const imageId = state.imageUrl ? `gen-img-${Date.now()}` : undefined;
   
-  // Handle download action
-  const handleDownload = () => {
+  // Convert base64 to file object
+  const getImageFileFromBase64 = () => {
+    if (!state.imageUrl) return null;
+    
+    if (state.imageUrl.startsWith('data:')) {
+      const arr = state.imageUrl.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      
+      return new File([u8arr], `generated-image-${Date.now()}.png`, { type: mime });
+    }
+    
+    return null;
+  };
+  
+  // Handle download action with Pinata upload
+  const handleDownload = async () => {
     if (!state.imageUrl) return;
     
-    const link = document.createElement('a');
-    link.href = state.imageUrl;
-    link.download = `generated-image-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      setUploading(true);
+      setUploadError(null);
+      
+      // Get file object from base64
+      const imageFile = getImageFileFromBase64();
+      
+      if (!imageFile) {
+        throw new Error("Failed to convert image to file");
+      }
+      
+      // Initialize Pinata SDK
+      const pinata = new PinataSDK({
+        pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT!,
+        pinataGateway: "amaranth-keen-tern-765.mypinata.cloud", // Adjust if you have a custom gateway
+      });
+      
+      // Upload to Pinata
+      const metadata = {
+        name: `Generated Image: ${state.prompt?.substring(0, 30) || "Untitled"}`,
+        description: state.prompt || "AI generated image",
+        model: selectedModel
+      };
+      
+      const upload = await pinata.upload.public.file(imageFile, {
+        pinataMetadata: {
+          name: metadata.name,
+        },
+      });
+      
+      console.log("Pinata upload success:", upload);
+      
+      // Also download locally
+      const link = document.createElement('a');
+      link.href = state.imageUrl;
+      link.download = `generated-image-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setShareMessage("Image uploaded to IPFS and saved locally!");
+      setTimeout(() => setShareMessage(null), 3000);
+      
+    } catch (error) {
+      console.error("Error uploading to Pinata:", error);
+      setUploadError("Failed to upload to IPFS. Saved locally only.");
+      
+      // Fallback to local download only
+      const link = document.createElement('a');
+      link.href = state.imageUrl;
+      link.download = `generated-image-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(() => setUploadError(null), 3000);
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Handle successful mint
@@ -192,10 +269,10 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleDownload}
-              disabled={state.isGenerating}
+              disabled={state.isGenerating || uploading}
             >
-              <Download className="h-4 w-4" />
-              <span>Save</span>
+              <Download className={`h-4 w-4 ${uploading ? "animate-bounce" : ""}`} />
+              <span>{uploading ? "Uploading..." : "Save to IPFS"}</span>
             </motion.button>
             <motion.button
               className="flex-1 bg-[#2d2936] hover:bg-[#3a3545] text-gray-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
@@ -213,6 +290,12 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
         {shareMessage && (
           <div className="mt-2 text-center text-sm text-green-400">
             {shareMessage}
+          </div>
+        )}
+        
+        {uploadError && (
+          <div className="mt-2 text-center text-sm text-red-400">
+            {uploadError}
           </div>
         )}
       </div>
