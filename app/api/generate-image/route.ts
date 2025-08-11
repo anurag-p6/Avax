@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       // Call the HuggingFace API to generate an image
       console.log('Calling HuggingFace API...');
       const imageBlob = await client.textToImage({
-        provider: "auto",
+        provider: "replicate",
         model: selectedModel,
         inputs: prompt,
         parameters: { 

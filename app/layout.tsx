@@ -9,7 +9,7 @@ import Providers from "./api/generate-image/provider"
 export const metadata: Metadata = {
   title: "Mira",
   description: "The best AI Chat ever made",
-  icons: "/images/tabicon.ico",
+  
 }
 
 export default function RootLayout({

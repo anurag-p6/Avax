@@ -7,6 +7,8 @@ import { ModelDropdown } from "./modeldropdown"
 import { FileDropArea } from "./file-drop-area"
 import ChatBox from "./chatbox"
 import { updateModelProvider } from "@/chat/provider"
+import Image from "next/image"
+import { DEFAULT_SUGGESTIONS, AISuggestion } from "./ai-suggestions"
 
 // Define message types
 interface Message {
@@ -29,7 +31,7 @@ export function ChatUI() {
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false)
   const [showFileDropArea, setShowFileDropArea] = useState(false)
   
-  // Image generation state (shared with ImageGen component)
+  // Image generation state
   const [imageGenState, setImageGenState] = useState<ImageGenState>({
     prompt: "",
     isGenerating: false,
@@ -47,69 +49,46 @@ export function ChatUI() {
 
   // Handle model change
   const handleModelChange = (modelName: string) => {
-    // Update local state
     setSelectedModel(modelName);
-    // Update provider with the new model
     updateModelProvider(modelName);
   };
 
   // Function to generate image based on prompt
   const generateImage = async (prompt: string) => {
     try {
-      console.log('Starting image generation with prompt:', prompt);
       setImageGenState(prev => ({ ...prev, isGenerating: true, prompt }));
       
-      // Determine if the selected model is an image generation model
-      const isImageModel = selectedModel === "Stable-diffusion-xl-base-1.0";
-      const modelToUse = isImageModel ? selectedModel : "default";
-      
-      console.log('Making API request to /api/generate-image');
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          prompt: prompt.trim(), 
-          steps: 5,
-          model: modelToUse
-        }),
-      });
-      
-      console.log('API response status:', response.status);
-      console.log('API response ok:', response.ok);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API response error text:', errorText);
-        throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('API response data:', { success: data.success, hasImageUrl: !!data.imageUrl, error: data.error });
-      
-      if (data.success && data.imageUrl) {
-        setImageGenState({
-          prompt,
-          isGenerating: false,
-          imageUrl: data.imageUrl,
+      try {
+        const response = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: prompt.trim() }),
         });
         
-        return data.imageUrl;
-      } else {
-        throw new Error(data.error || data.details || "Failed to generate image - no error details");
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.imageUrl) {
+          setImageGenState({
+            prompt,
+            isGenerating: false,
+            imageUrl: data.imageUrl,
+          });
+          
+          return data.imageUrl;
+        } else {
+          throw new Error(data.error || "Failed to generate image");
+        }
+      } catch (error) {
+        console.error("Error calling API:", error);
+        throw error;
       }
     } catch (error: any) {
       console.error("Error generating image:", error);
-      console.error("Error details:", {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
       setImageGenState(prev => ({ ...prev, isGenerating: false }));
-      
-      // Show more specific error to user
-      const errorMessage = error.message || "Unknown error occurred";
-      alert(`Image generation failed: ${errorMessage}`);
-      
       return null;
     }
   };
@@ -119,21 +98,19 @@ export function ChatUI() {
     setImageGenState(prev => ({ ...prev, prompt }));
   };
 
+  // Handle sending a message
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
     
-    // Add user message to chat
     setMessages(prev => [...prev, { role: "user", content: message }])
     setIsLoading(true)
 
     try {
-      // Check if this is an image generation request
       if (message.toLowerCase().includes("generate image") || 
           message.toLowerCase().includes("create image") || 
           message.toLowerCase().includes("draw") || 
           message.toLowerCase().startsWith("image of")) {
         
-        // Extract the image description
         let imagePrompt = message;
         
         if (message.toLowerCase().includes("generate image of")) {
@@ -146,10 +123,8 @@ export function ChatUI() {
           imagePrompt = message.substring("image of".length).trim();
         }
         
-        // Generate the image
         const imageUrl = await generateImage(imagePrompt);
         
-        // Add AI response with image information
         setMessages(prev => [
           ...prev, 
           { 
@@ -160,10 +135,8 @@ export function ChatUI() {
           }
         ]);
       } else {
-        // Handle regular text message
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Add assistant response
         setMessages(prev => [
           ...prev, 
           { 
@@ -179,6 +152,11 @@ export function ChatUI() {
     }
   };
 
+  // Function to handle suggestion click
+  const handleSuggestionClick = (suggestionText: string) => {
+    handleSendMessage(suggestionText);
+  };
+  
   return (
     <div className="flex h-full">
       {/* Chat Panel */}
@@ -188,9 +166,45 @@ export function ChatUI() {
           <div className="flex-1 overflow-auto p-4">
             <div className="max-w-3xl mx-auto space-y-4">
               {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full mt-20 text-center">
-                  <h1 className="text-xl font-medium text-gray-400 mb-4">No messages yet</h1>
-                  <p className="text-sm text-gray-500">Start a conversation by sending a message below</p>
+                <div className="flex flex-col items-start justify-center h-full mt-20 px-4">
+                  <div className="flex items-center mb-2">
+                    <Image 
+                      src="/images/orb2.png" 
+                      alt="Mira Logo" 
+                      width={64} 
+                      height={64} 
+                      className="rounded-full mr-3"
+                    />
+                    <h1 className="text-3xl mb-3 ml-2 font-medium text-white">Mira AI</h1>
+                  </div>
+                  <p className="text-gray-400 mb-8">Let's create new possibilities together</p>
+                  
+                  {/* Image generation suggestions */}
+                  <div className="w-full">
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {DEFAULT_SUGGESTIONS.slice(0, 3).map(suggestion => (
+                        <button 
+                          key={suggestion.id}
+                          onClick={() => handleSuggestionClick(suggestion.text)}
+                          className="px-3 py-1.5 bg-[#2d2936] hover:bg-[#3a3545] rounded-full text-xs text-gray-300 transition-colors"
+                        >
+                          {suggestion.text}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {DEFAULT_SUGGESTIONS.slice(3).map(suggestion => (
+                        <button 
+                          key={suggestion.id}
+                          onClick={() => handleSuggestionClick(suggestion.text)}
+                          className="px-3 py-1.5 bg-[#2d2936] hover:bg-[#3a3545] rounded-full text-xs text-gray-300 transition-colors"
+                        >
+                          {suggestion.text}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 messages.map((msg, index) => (
@@ -206,7 +220,7 @@ export function ChatUI() {
             </div>
           </div>
 
-          {/* Use ChatInput component */}
+          {/* Chat Input */}
           <ChatInput
             onSend={handleSendMessage}
             isLoading={isLoading}
@@ -233,18 +247,18 @@ export function ChatUI() {
         />
       </div>
 
-      {/* Render ModelDropdown only when isModelSelectorOpen is true */}
+      {/* Model Dropdown */}
       {isModelSelectorOpen && (
         <ModelDropdown
           isOpen={isModelSelectorOpen}
           setIsOpen={setIsModelSelectorOpen}
           selectedModel={selectedModel}
-          setSelectedModel={handleModelChange}  // Use our new handler that updates both state and provider
+          setSelectedModel={handleModelChange}
           modelSelectorRef={modelSelectorRef}
         />
       )}
 
-      {/* Render FileDropArea only when showFileDropArea is true */}
+      {/* File Drop Area */}
       {showFileDropArea && (
         <FileDropArea onClose={() => setShowFileDropArea(false)} />
       )}

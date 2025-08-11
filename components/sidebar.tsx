@@ -27,7 +27,7 @@ export default function Sidebar() {
               className="absolute top-6 left-6 z-50 text-gray-300 bg-[#2d2936] p-2 rounded-md hover:bg-[#3a3545] transition-colors flex items-center gap-2"
               onClick={() => setSidebarCollapsed(false)}
             >
-              <Image src="/images/bloborb.png" alt="Agentzk Logo" width={28} height={28} className="object-contain rounded-full" />
+              <Image src="/images/orb2.png" alt="Agentzk Logo" width={28} height={28} className="object-contain rounded-full" />
               <PanelLeft size={18} />
             </button>
           )}
@@ -44,7 +44,7 @@ export default function Sidebar() {
           >
             <div className="p-6 flex items-center">
               <div className="flex items-center">
-                <Image src="/images/bloborb.png" alt="" width={40} height={40} className="mr-3 object-contain rounded-full" />
+                <Image src="/images/orb2.png" alt="" width={40} height={40} className="mr-3 object-contain rounded-full" />
                 <div className="text-purple-100 font-semibold text-lg">Mira</div>
               </div>
               <button

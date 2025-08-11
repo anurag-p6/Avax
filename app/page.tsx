@@ -65,8 +65,6 @@ export default function Home() {
             </button>
           )}
 
-          
-
           <ChatUI />
 
           <ModelDropdown
