@@ -31,6 +31,7 @@ const modelMappings: Record<string, string> = {
   "Stable-diffusion-xl-base-1.0": "stabilityai/stable-diffusion-xl-base-1.0:free",
   "black-forest-labs/FLUX.1-dev": "black-forest-labs/FLUX.1-dev:free",
   "Qwen/Qwen-Image": "qwen/qwen-image:free",
+  "ByteDance/SDXL-Lightning": "bytedance/sdxl-lightning:free",
 
   // // Default model if none of the above match
   // "default": "mistralai/mistral-7b-instruct:free"

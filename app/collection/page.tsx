@@ -84,43 +84,12 @@ function CollectionPageContent() {
   const [error, setError] = useState<any>(null);
   const { authenticated } = useAuthState();
   
-  // Fetch function - sample data
+  // Fetch function - uses API
   const fetchFiles = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Sample data structure
-      const sampleData = {
-        files: [
-          {
-            id: "01989a1c-73a8-78e7-bbe2-261503c4d047",
-            name: "generated-image-1754932210607.png",
-            cid: "bafkreihkte25hw4xchfilsmnm462ul33q3erbtsrizwbhig6qwcnalauke",
-            size: 22394,
-            number_of_files: 1,
-            mime_type: "image/webp",
-            group_id: null,
-            created_at: "2025-08-11T17:10:12.979556Z"
-          },
-          {
-            id: "019899d7-6c40-780f-9231-db2d7a9c03e6",
-            name: "generated-image-1754927686636.png",
-            cid: "bafkreicp3cbwydwknh2xvowpn7yjb3vij2wojg74a7tktfvmvquooboq4i",
-            size: 31144,
-            number_of_files: 1,
-            mime_type: "image/webp",
-            group_id: null,
-            created_at: "2025-08-11T15:54:49.078202Z"
-          }
-        ],
-        next_page_token: "MjAyNS0wOC0xMVQxNTo1NDo0OS4wNzgyMDIrMDA6MDB8MDE5ODk5ZDctNmM0MC03ODBmLTkyMzEtZGIyZDdhOWMwM2U2"
-      };
-      
-      setItems(sampleData.files);
-      
-      // Uncomment if you want to use API instead of sample data
-      /*
       const response = await fetch('/api/pinata-files', {
         method: 'GET',
         headers: {
@@ -139,7 +108,6 @@ function CollectionPageContent() {
       } else {
         setError({message: 'No files found'});
       }
-      */
     } catch (err) {
       console.error("Error:", err);
       setError(err);
@@ -265,5 +233,6 @@ function CollectionPageContent() {
 export default function CollectionPage() {
   return <CollectionPageContent />;
 }
+
 
 

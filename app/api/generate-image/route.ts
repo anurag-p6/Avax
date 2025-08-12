@@ -4,8 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 // Initialize the HuggingFace client
 const client = new InferenceClient(process.env.HF_TOKEN);
 
+interface imageModels {
+  "Stable-diffusion-xl-base-1.0": string;
+  "default": string;
+}
+
 // Map of image generation models
-const imageModels = {
+const imageModels: imageModels = {
   "Stable-diffusion-xl-base-1.0": "stabilityai/stable-diffusion-xl-base-1.0",
   "default": "stabilityai/stable-diffusion-xl-base-1.0" // Use stable diffusion as default
 };

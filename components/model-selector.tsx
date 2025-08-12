@@ -32,6 +32,12 @@ const models: ModelType[] = [
     capabilities: ["vision"],
     modelId: "qwen/qwen-image:free",
     free: true
+  },
+  {
+    name: "ByteDance/SDXL-Lightning",
+    capabilities: ["vision"],
+    modelId: "bytedance/sdxl-lightning:free",
+    free: true
   }
 ]
 

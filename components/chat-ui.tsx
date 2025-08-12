@@ -27,7 +27,7 @@ export function ChatUI() {
   // Existing state
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedModel, setSelectedModel] = useState("Gemini 2.5 Flash")
+  const [selectedModel, setSelectedModel] = useState("Stable-diffusion-xl-base-1.0")
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false)
   const [showFileDropArea, setShowFileDropArea] = useState(false)
   
