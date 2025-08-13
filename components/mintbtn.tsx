@@ -92,7 +92,7 @@ export function MintButton({
         return;
       }
       
-      // Create NFT metadata
+      // Create NFT metadata with price information
       const metadata = {
         name: prompt ? `AI Generated: ${prompt.substring(0, 30)}...` : "AI Generated Image",
         description: prompt || "Generated with AI",
@@ -108,13 +108,18 @@ export function MintButton({
           {
             trait_type: "Date",
             value: new Date().toISOString().split('T')[0]
+          },
+          {
+            trait_type: "Price",
+            value: "0.1 CAMP"
           }
         ]
       };
       
-      // Create license terms
+      // Create license terms with price set to 0.1 CAMP (represented in wei)
+      // 0.1 with 18 decimals = 100000000000000000 (1e17)
       const license = {
-        price: BigInt(0),
+        price: BigInt("100000000000000000"), // 0.1 CAMP in wei
         duration: 2629800, // 30 days in seconds
         royaltyBps: 0,
         paymentToken: "0x0000000000000000000000000000000000000000" as Address,
@@ -124,6 +129,7 @@ export function MintButton({
         fileSize: fileSizeMB.toFixed(2) + "MB",
         walletAddress,
         model,
+        price: "0.1 CAMP"
       });
       
       // Mint NFT
@@ -153,10 +159,10 @@ export function MintButton({
   return (
     <>
       <motion.button
-        className={`w-full bg-[#3a3349] hover:bg-[#4a4359] 
-          text-white font-medium py-3 px-6 rounded-lg flex items-center justify-center
+        className={`w-full bg-white hover:bg-gray-100 
+          text-[#3a3349] font-medium py-3 px-6 rounded-lg flex items-center justify-center
           shadow-md shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed 
-          border border-[#4d4561] transition-colors ${className}`}
+          border border-gray-200 transition-colors ${className}`}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleMint}
@@ -165,11 +171,11 @@ export function MintButton({
         <span className="tracking-wide">
           {loading ? (
             <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin mr-2"></div>
+              <div className="h-4 w-4 rounded-full border-2 border-[#3a3349]/30 border-t-[#3a3349] animate-spin mr-2"></div>
               Minting...
             </div>
           ) : (
-            success ? "Minted!" : (authenticated ? "Mint NFT" : "Connect to Mint")
+            success ? "Minted!" : (authenticated ? "Mint" : "Connect to Mint")
           )}
         </span>
       </motion.button>
@@ -182,7 +188,7 @@ export function MintButton({
       
       {success && (
         <div className="mt-2 text-center text-sm text-green-400 bg-green-900/20 p-2 rounded-md">
-          Successfully minted as NFT!
+          Successfully minted as NFT for 0.1 CAMP!
         </div>
       )}
 

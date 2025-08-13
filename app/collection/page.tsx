@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Search, Image as ImageIcon, ExternalLink, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/sidebar';
 import CopyButton from '@/components/CopyButton';
 import WalletButton from '@/components/walletbutton';
 import { useAuthState } from "@campnetwork/origin/react";
+import { MintButton } from '@/components/mintbtn';
 
 // Simple file interface matching Pinata response
 interface PinataFile {
@@ -25,6 +26,7 @@ interface PinataFile {
 const ImageItem = ({ item }: { item: PinataFile }) => {
   const imageUrl = `https://gateway.pinata.cloud/ipfs/${item.cid}`;
   const datePinned = new Date(item.created_at).toLocaleDateString();
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <motion.div
@@ -33,6 +35,8 @@ const ImageItem = ({ item }: { item: PinataFile }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative group cursor-pointer overflow-hidden rounded-lg bg-[#2d2936] border border-[#3a3545] hover:border-purple-400/50 transition-all w-full h-auto">
         <img
@@ -69,6 +73,26 @@ const ImageItem = ({ item }: { item: PinataFile }) => {
               </div>
             </div>
           </div>
+          
+          {/* Mint button that appears on hover */}
+          <AnimatePresence>
+            {isHovered && (
+              <motion.div 
+                className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 to-black/0"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <MintButton 
+                  imageUrl={imageUrl} 
+                  prompt={item.name}
+                  model="IPFS Collection"
+                  className="mt-2"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </motion.div>
@@ -144,8 +168,8 @@ function CollectionPageContent() {
                 <ArrowLeft className="h-5 w-5 text-white" />
               </motion.button>
               <div>
-                <h1 className="text-2xl font-semibold text-white">IPFS Collection</h1>
-                <p className="text-gray-400 text-sm mt-1">Files stored on Pinata IPFS</p>
+                <h1 className="text-2xl font-semibold text-white">Collection</h1>
+                <p className="text-gray-400 text-sm mt-1">Files stored on IPFS</p>
               </div>
             </div>
             
