@@ -24,9 +24,15 @@ interface PinataFile {
 
 // Simple image item component
 const ImageItem = ({ item }: { item: PinataFile }) => {
+  const router = useRouter();
   const imageUrl = `https://gateway.pinata.cloud/ipfs/${item.cid}`;
   const datePinned = new Date(item.created_at).toLocaleDateString();
   const [isHovered, setIsHovered] = useState(false);
+
+  const handleItemClick = () => {
+    // Navigate to the NFT detail page
+    router.push(`/collection/nft/${item.cid}`);
+  };
 
   return (
     <motion.div
@@ -37,6 +43,7 @@ const ImageItem = ({ item }: { item: PinataFile }) => {
       transition={{ duration: 0.3 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleItemClick}
     >
       <div className="relative group cursor-pointer overflow-hidden rounded-lg bg-[#2d2936] border border-[#3a3545] hover:border-purple-400/50 transition-all w-full h-auto">
         <img
@@ -84,6 +91,15 @@ const ImageItem = ({ item }: { item: PinataFile }) => {
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
               >
+                <button 
+                  className="w-full bg-purple-700 hover:bg-purple-800 text-white py-1.5 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 mb-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/collection/nft/${item.cid}`);
+                  }}
+                >
+                  View Details
+                </button>
                 <MintButton 
                   imageUrl={imageUrl} 
                   prompt={item.name}

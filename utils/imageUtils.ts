@@ -86,34 +86,34 @@ export function prepareImageForMinting(file: File, metadata: any) {
 }
 
 /**
- * Convert a data URL to a File object with proper MIME type
+ * Converts a data URL to a File object
  */
 export function dataURLtoFile(dataUrl: string, filename: string): File | null {
-  if (!dataUrl) return null;
-  
+  if (!dataUrl || typeof dataUrl !== 'string') {
+    return null;
+  }
+
   try {
-    // Extract MIME type and base64 data
-    if (dataUrl.startsWith('data:')) {
-      const arr = dataUrl.split(',');
-      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
-      const bstr = atob(arr[1]);
-      
-      // Convert to byte array
-      const n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      for (let i = 0; i < n; i++) {
-        u8arr[i] = bstr.charCodeAt(i);
-      }
-      
-      // Create clean file object
-      return new File([u8arr], filename, { type: mime });
+    // Convert base64/URLEncoded data to a file
+    const arr = dataUrl.split(',');
+    const match = arr[0].match(/:(.*?);/);
+    
+    if (!match) {
+      return null;
     }
     
-    // Handle case where imageUrl is a regular URL, not a data URL
-    console.warn("Image URL is not a data URL. Cannot convert to File directly.");
-    return null;
-  } catch (error) {
-    console.error("Error converting data URL to file:", error);
+    const mime = match[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    
+    return new File([u8arr], filename, { type: mime });
+  } catch (e) {
+    console.error('Error converting data URL to file:', e);
     return null;
   }
 }
@@ -136,4 +136,16 @@ export function createNFTMetadata(prompt: string, model: string) {
       }
     ]
   };
+}
+
+/**
+ * Formats a string to show only partial view
+ * like 0x1234...5678
+ */
+export function formatAddress(address: string, frontChars = 6, endChars = 4): string {
+  if (!address || address.length < (frontChars + endChars)) {
+    return address;
+  }
+  
+  return `${address.substring(0, frontChars)}...${address.substring(address.length - endChars)}`;
 }
