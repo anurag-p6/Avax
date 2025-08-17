@@ -1,30 +1,23 @@
 "use client"
 
-import { motion } from "framer-motion";
 import { useState } from "react";
-import { useAuth, useAuthState, useModal as useCampModal, CampModal } from "@campnetwork/origin/react";
-import { useModal, ParaModal, OAuthMethod } from "@getpara/react-sdk";
-import type { Address } from "viem/accounts";
+import { motion } from "framer-motion";
+import { useAccount, useConnect, useWriteContract } from "wagmi";
+import { contractABI, contractAddress } from "@/abi";
+import { PinataSDK } from "pinata";
 import { dataURLtoFile } from "../utils/imageUtils";
+import { Wallet } from "lucide-react";
 
 interface MintButtonProps {
   onClick?: () => void;
   disabled?: boolean;
   loading?: boolean;
   className?: string;
-  file?: any;
   imageId?: string;
   imageUrl?: string;
   prompt?: string;
   model?: string;
 }
-
-type LicenseTerms = {
-  price: bigint;
-  duration: number;
-  royaltyBps: number;
-  paymentToken: Address;
-};
 
 export function MintButton({ 
   onClick, 
@@ -39,14 +32,32 @@ export function MintButton({
   const [internalLoading, setInternalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [cid, setCid] = useState<string | null>(null);
   
-  // Access Camp authentication
-  const { authenticated } = useAuthState();
-  const { openModal: openCampModal } = useCampModal();
-  const { origin, walletAddress, jwt } = useAuth();
+  // Wallet connection hooks
+  const { address, isConnected } = useAccount();
+  const { connect, connectors, isPending: isConnecting } = useConnect();
   
-  // Loading state
-  const loading = externalLoading || internalLoading;
+  // Contract interaction hook
+  const { writeContractAsync, isPending } = useWriteContract();
+  
+  // Combined loading state
+  const loading = externalLoading || internalLoading || isPending || isConnecting;
+
+  const handleConnect = async () => {
+    try {
+      // Get the first available connector (usually injected/MetaMask)
+      const connector = connectors[0];
+      if (connector) {
+        await connect({ connector });
+      } else {
+        setError("No wallet connectors available");
+      }
+    } catch (error: any) {
+      console.error("Error connecting wallet:", error);
+      setError(`Wallet connection failed: ${error.message || "Unknown error"}`);
+    }
+  };
 
   const handleMint = async () => {
     if (disabled || loading) return;
@@ -54,103 +65,78 @@ export function MintButton({
     setSuccess(false);
     
     try {
-      // If not authenticated, open authentication modal
-      if (!authenticated) {
-        openCampModal();
-        return;
-      }
-
       // Check wallet connection
-      if (!walletAddress) {
-        setError("Wallet not connected. Please connect your wallet first.");
+      if (!isConnected) {
+        handleConnect();
         return;
       }
 
       setInternalLoading(true);
       
-      // Convert image URL to file object
+      // Check if we have an image
       if (!imageUrl) {
         setError("No image available to mint");
         return;
       }
       
-      // Create file from image URL
-      const file = dataURLtoFile(
-        imageUrl, 
-        `ai-generated-${Date.now()}.png`
-      );
-      
+      // Convert the image URL to a file
+      const file = dataURLtoFile(imageUrl, `ai-generated-${Date.now()}.png`);
       if (!file) {
         setError("Could not process image for minting");
         return;
       }
       
-      // Check file size
-      const fileSizeMB = file.size / (1024 * 1024);
-      if (fileSizeMB > 10) {
-        setError(`File too large (${fileSizeMB.toFixed(2)}MB). Maximum allowed is 10MB.`);
-        return;
-      }
-      
-      // Create NFT metadata with price information
-      const metadata = {
-        name: prompt ? `AI Generated: ${prompt.substring(0, 30)}...` : "AI Generated Image",
-        description: prompt || "Generated with AI",
-        attributes: [
-          {
-            trait_type: "Generated with",
-            value: model
-          },
-          {
-            trait_type: "Prompt",
-            value: prompt
-          },
-          {
-            trait_type: "Date",
-            value: new Date().toISOString().split('T')[0]
-          },
-          {
-            trait_type: "Price",
-            value: "0.1 CAMP"
-          }
-        ]
-      };
-      
-      // Create license terms with price set to 0.1 CAMP (represented in wei)
-      // 0.1 with 18 decimals = 100000000000000000 (1e17)
-      const license = {
-        price: BigInt("100000000000000000"), // 0.1 CAMP in wei
-        duration: 2629800, // 30 days in seconds
-        royaltyBps: 0,
-        paymentToken: "0x0000000000000000000000000000000000000000" as Address,
-      } as LicenseTerms;
-
-      console.log("Starting NFT minting...", {
-        fileSize: fileSizeMB.toFixed(2) + "MB",
-        walletAddress,
-        model,
-        price: "0.1 CAMP"
+      // Initialize Pinata SDK
+      const pinata = new PinataSDK({
+        pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT!,
       });
       
-      // Mint NFT
-      const result = await origin.mintFile(file, metadata, license);
+      // Upload the image to IPFS
+      console.log("Uploading to IPFS...");
+      const uploadResult = await pinata.upload.public.file(file, {
+        filename: `${prompt?.substring(0, 20) || "ai-image"}-${Date.now()}.png`,
+      });
+
+      // Log the full upload result for inspection
+      console.log("Pinata upload result:", uploadResult);
       
-      // Set success state
-      setSuccess(true);
+      // Get the CID from the result
+      const tokenURI = `ipfs://${uploadResult.cid}`;
+      setCid(uploadResult.cid);
       
-      // Call onClick callback if provided
-      if (onClick) onClick();
-    } catch (mintError: any) {
-      console.error("Minting failed:", mintError);
+      console.log("CID:", uploadResult.cid);
+      console.log("Full tokenURI to be used for minting:", tokenURI);
+      console.log("IPFS gateway URL:", `https://gateway.pinata.cloud/ipfs/${uploadResult.cid}`);
       
-      // Determine the specific error message
-      if (mintError?.message?.includes("BigInt") || mintError?.message?.includes("serialize")) {
-        setError("Technical error with NFT data. Please try with a different wallet.");
-      } else if (mintError?.message?.includes("signature") || mintError?.message?.includes("rejected")) {
-        setError("Transaction rejected. Please approve the transaction in your wallet.");
-      } else {
-        setError("Failed to mint NFT. Please try again.");
+      // Mint the NFT using the contract
+      console.log("Minting NFT with tokenURI:", tokenURI);
+      console.log("Connected wallet address:", address);
+      
+      try {
+        const tx = await writeContractAsync({
+          address: contractAddress as `0x${string}`,
+          abi: contractABI,
+          functionName: 'mintToken',
+          args: [tokenURI],
+        });
+        
+        console.log("Mint transaction successful:", tx);
+        
+        // Show success message
+        setSuccess(true);
+        
+        // Call the success callback if provided
+        if (onClick) onClick();
+      } catch (contractError: any) {
+        console.error("Contract interaction failed:", contractError);
+        console.log("Contract address used:", contractAddress);
+        console.log("Function called:", 'mintToken');
+        console.log("Arguments passed:", [tokenURI]);
+        throw contractError;
       }
+    } catch (error: any) {
+      console.error("Error minting NFT:", error);
+      setError(`Failed to mint: ${error.message || "Unknown error"}`);
     } finally {
       setInternalLoading(false);
     }
@@ -165,17 +151,28 @@ export function MintButton({
           border border-gray-200 transition-colors ${className}`}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
-        onClick={handleMint}
+        onClick={isConnected ? handleMint : handleConnect}
         disabled={disabled || loading}
       >
-        <span className="tracking-wide">
+        <span className="tracking-wide flex items-center gap-2">
           {loading ? (
             <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-full border-2 border-[#3a3349]/30 border-t-[#3a3349] animate-spin mr-2"></div>
-              Minting...
+              <div className="h-4 w-4 rounded-full border-2 border-[#3a3349]/30 border-t-[#3a3349] animate-spin"></div>
+              {isPending ? "Confirming..." : (isConnecting ? "Connecting..." : "Minting...")}
             </div>
           ) : (
-            success ? "Minted!" : (authenticated ? "Mint" : "Connect to Mint")
+            success ? (
+              "Minted!"
+            ) : (
+              isConnected ? (
+                "Mint NFT"
+              ) : (
+                <>
+                  <Wallet className="h-4 w-4" />
+                  Connect Wallet
+                </>
+              )
+            )
           )}
         </span>
       </motion.button>
@@ -188,26 +185,20 @@ export function MintButton({
       
       {success && (
         <div className="mt-2 text-center text-sm text-green-400 bg-green-900/20 p-2 rounded-md">
-          Successfully minted as NFT for 0.1 CAMP!
+          <p>Successfully minted NFT!</p>
+          {cid && (
+            <p className="text-xs mt-1 break-all">
+              <span className="font-semibold">IPFS:</span> ipfs://{cid}
+            </p>
+          )}
         </div>
       )}
-
-      {/* Modals */}
-      <CampModal injectButton={false} />
-      <ParaModal
-        appName="Camp"
-        oAuthMethods={[OAuthMethod.GOOGLE, OAuthMethod.TWITTER]}
-        authLayout={["EXTERNAL:FULL", "AUTH:FULL"]}
-        externalWallets={[
-          "METAMASK",
-          "WALLETCONNECT",
-          "COINBASE",
-          "OKX",
-          "ZERION",
-        ]}
-        disablePhoneLogin
-        recoverySecretStepEnabled
-      />
+      
+      {isConnected && address && (
+        <div className="mt-1 text-center text-xs text-gray-400">
+          Connected: {address.substring(0, 6)}...{address.substring(address.length - 4)}
+        </div>
+      )}
     </>
   );
 }

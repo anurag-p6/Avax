@@ -302,4 +302,3 @@ export function ImageGen({ state, setState, onGenerateImage, selectedModel }: Im
     </div>
   )
 }
-

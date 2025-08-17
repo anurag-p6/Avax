@@ -16,6 +16,7 @@
     "@composio/core": "^0.1.36",
     "@coral-xyz/anchor": "0.28.0",
     "@getpara/evm-wallet-connectors": "^1.18.1",
+    "@getpara/react-sdk": "^1.18.1",
     "@gsap/react": "^2.1.2",
     "@huggingface/inference": "^4.6.1",
     "@phantom/browser-sdk": "^0.0.6",
@@ -34,7 +35,7 @@
     "@solana/wallet-adapter-react": "^0.15.39",
     "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/web3.js": "^1.98.2",
-    "@tanstack/react-query": "^5.84.2",
+    "@tanstack/react-query": "^5.85.3",
     "@vercel/analytics": "^1.5.0",
     "ai": "^4.3.19",
     "class-variance-authority": "^0.7.0",
@@ -59,9 +60,11 @@
     "solana-agent-kit": "^2.0.7",
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7",
-    "viem": "^2.33.3",
+    "viem": "2.x",
+    "wagmi": "^2.16.3",
     "zod": "^3.25.76",
-    "zod-to-json-schema": "^3.24.6"
+    "zod-to-json-schema": "^3.24.6",
+    "zustand": "^5.0.7"
   },
   "devDependencies": {
     "@types/next": "^8.0.7",

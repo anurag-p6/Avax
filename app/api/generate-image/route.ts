@@ -4,13 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // Initialize the HuggingFace client
 const client = new InferenceClient(process.env.HF_TOKEN);
 
-interface imageModels {
-  "Stable-diffusion-xl-base-1.0": string;
-  "default": string;
-}
-
 // Map of image generation models
-const imageModels: imageModels = {
+const imageModels = {
   "Stable-diffusion-xl-base-1.0": "stabilityai/stable-diffusion-xl-base-1.0",
   "default": "stabilityai/stable-diffusion-xl-base-1.0" // Use stable diffusion as default
 };
@@ -46,7 +41,7 @@ export async function POST(req: NextRequest) {
       // Call the HuggingFace API to generate an image
       console.log('Calling HuggingFace API...');
       const imageBlob = await client.textToImage({
-        provider: "replicate",
+        provider: "auto",
         model: selectedModel,
         inputs: prompt,
         parameters: { 
